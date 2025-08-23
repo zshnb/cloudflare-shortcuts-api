@@ -43,9 +43,10 @@ const handle = async (c: Context) =>  {
 				.title('标题', xhsResponse.data.作品标题)
 				.richText('笔记链接', sharedContent)
 				.richText('作者', xhsResponse.data.作者昵称)
-				.date('发布时间', xhsResponse.data.发布时间)
+				.date('发布时间', xhsResponse.data.发布时间.replace('_', 'T'))
 				.multiSelect('分类', type)
 				.multiSelect('平台', '小红书')
+				.paragraph(xhsResponse.data.作品描述)
 
 			xhsResponse.data.下载地址.map((it) => {
 				builder.file(it)
