@@ -77,12 +77,12 @@ const handle = async (c: Context) =>  {
 }
 
 function extractRedbookLink(sharedContent: string) {
-	const re = /http(s)?:\/\/xhslink\.com(\/[0-9a-zA-Z]+)+/
+	const re = /http(s)?:\/\/xhslink\.(cn|com)(\/[0-9a-zA-Z]+)+/
 	const result = sharedContent.match(re)
 	if (result === null) {
 		return undefined
 	} else {
-		return result[0]
+		return result[0].replace('.cn', '.com')
 	}
 }
 
