@@ -16,5 +16,6 @@ app.get('/api/redbook-notion-types', redbookNotionTypesHandler)
 app.get('/api/alarm-creator', alarmCreatorHandler)
 app.post('/api/douyin-download', douyinDownloadHandler)
 1
+2
 
 export default app
