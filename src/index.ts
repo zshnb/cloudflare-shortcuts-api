@@ -14,6 +14,7 @@ app.get('/api/reminder-creator', reminderCreatorHandler)
 app.post('/api/redbook-to-notion', redbookToNotionHandler)
 app.get('/api/redbook-notion-types', redbookNotionTypesHandler)
 app.get('/api/alarm-creator', alarmCreatorHandler)
+app.get('/api/alarm-creator2', alarmCreatorHandler)
 app.post('/api/douyin-download', douyinDownloadHandler)
 
 export default app
