@@ -5,7 +5,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "test:douyin": "node --test test/douyin-download.test.mjs"
+    "test:douyin": "node --test test/douyin-download.test.mjs",
+    "test:zhihu": "node --test test/zhihu-answer.test.mjs"
   },
   "dependencies": {
     "@langchain/core": "^1.0.5",

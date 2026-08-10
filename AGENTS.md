@@ -1,0 +1,3 @@
+这是一个cloudflare的worker后端服务，使用hono库作为http服务
+
+每个接口的逻辑为src目录下单独的typescript文件，接口注册在src/index.ts

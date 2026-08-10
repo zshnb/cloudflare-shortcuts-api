@@ -24,6 +24,18 @@ curl -X POST http://localhost:8787/api/douyin-download \
 The response contains the work ID, video resource ID, and a reusable 1080p
 official playback URL. The playback URL redirects to Douyin's short-lived CDN URL.
 
+## Zhihu answer extraction
+
+```bash
+curl -X POST http://localhost:8787/api/zhihu-answer \
+  -H 'Content-Type: application/json' \
+  -d '{"sharedContent":"https://www.zhihu.com/question/2045559758153946579/answer/2069584596400967693"}'
+```
+
+The response contains the question, author, publication timestamps, canonical URL,
+and plain-text answer body. The same endpoint also accepts Zhihu article links such
+as `https://zhuanlan.zhihu.com/p/2062894434782654668`.
+
 Pass the `CloudflareBindings` as generics when instantiation `Hono`:
 
 ```ts

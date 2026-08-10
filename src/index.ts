@@ -4,6 +4,7 @@ import alarmCreatorHandler from './alarm-creator'
 import redbookToNotionHandler from './redbook-to-notion'
 import redbookNotionTypesHandler from './redbook-notion-types'
 import douyinDownloadHandler from './douyin-download'
+import zhihuAnswerHandler from './zhihu-answer'
 
 type Bindings = {
   DEEPSEEK_API_KEY: string
@@ -15,5 +16,6 @@ app.post('/api/redbook-to-notion', redbookToNotionHandler)
 app.get('/api/redbook-notion-types', redbookNotionTypesHandler)
 app.get('/api/alarm-creator', alarmCreatorHandler)
 app.post('/api/douyin-download', douyinDownloadHandler)
+app.post('/api/zhihu-answer', zhihuAnswerHandler)
 
 export default app
