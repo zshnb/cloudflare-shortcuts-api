@@ -8,6 +8,7 @@ import zhihuAnswerHandler from './zhihu-answer'
 
 type Bindings = {
   DEEPSEEK_API_KEY: string
+  JINA_API_KEY?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()

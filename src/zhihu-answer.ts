@@ -7,6 +7,19 @@ type ZhihuAnswerRequest = {
 	sharedContent?: string
 }
 
+type Bindings = {
+	JINA_API_KEY?: string
+}
+
+class ReaderRateLimitError extends Error {
+	readonly retryAfter: string
+
+	constructor(retryAfter: string) {
+		super('Zhihu article reader is rate limited')
+		this.retryAfter = retryAfter
+	}
+}
+
 type ZhihuAnswerResponse = {
 	id: string
 	content: string
@@ -131,15 +144,73 @@ export function extractZhihuArticle(html: string, articleId: string) {
 	}
 }
 
-async function getZhihuArticle(articleId: string) {
-	const response = await fetch(`https://zhuanlan.zhihu.com/p/${articleId}`, {
-		headers: { 'User-Agent': USER_AGENT },
-	})
-	if (!response.ok) throw new Error(`Zhihu article page returned ${response.status}`)
-	return extractZhihuArticle(await response.text(), articleId)
+export function extractReaderArticle(markdown: string, articleId: string) {
+	const title = markdown.match(/^Title:\s*(.+)$/m)?.[1]?.trim()
+	const content = markdown.split(/^Markdown Content:\s*$/m)[1]?.trim()
+	if (!title || !content || content.includes('Target URL returned error')) {
+		throw new Error('Could not read Zhihu article')
+	}
+
+	return {
+		type: 'article' as const,
+		id: articleId,
+		sourceUrl: `https://zhuanlan.zhihu.com/p/${articleId}`,
+		title,
+		author: null,
+		createdAt: null,
+		updatedAt: null,
+		content: content
+			.replace(/!\[[^\]]*]\([^)]*\)/g, '')
+			.replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
+			.replace(/^#{1,6}\s+/gm, '')
+			.replace(/[*_]{1,2}/g, '')
+			.replace(/\n{3,}/g, '\n\n')
+			.trim(),
+	}
 }
 
-export default async function handle(c: Context) {
+async function getZhihuArticle(
+	articleId: string,
+	apiKey: string | undefined,
+	executionCtx: { waitUntil(promise: Promise<unknown>): void },
+) {
+	const articleUrl = `https://zhuanlan.zhihu.com/p/${articleId}`
+	const response = await fetch(articleUrl, {
+		headers: { 'User-Agent': USER_AGENT },
+	})
+	if (response.ok) {
+		try {
+			return extractZhihuArticle(await response.text(), articleId)
+		} catch {
+		}
+	}
+
+	const readerUrl = `https://r.jina.ai/${articleUrl}`
+	const cache = await caches.open('zhihu-articles')
+	const cached = await cache.match(readerUrl)
+	if (cached) return extractReaderArticle(await cached.text(), articleId)
+
+	const reader = await fetch(readerUrl, {
+		headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+	})
+	if (reader.status === 429) {
+		throw new ReaderRateLimitError(reader.headers.get('retry-after') ?? '60')
+	}
+	if (!reader.ok) throw new Error(`Zhihu article fallback returned ${reader.status}`)
+
+	const markdown = await reader.text()
+	const result = extractReaderArticle(markdown, articleId)
+	const cachedResponse = new Response(markdown, {
+		headers: {
+			'Cache-Control': 'public, max-age=86400',
+			'Content-Type': 'text/plain; charset=utf-8',
+		},
+	})
+	executionCtx.waitUntil(cache.put(readerUrl, cachedResponse))
+	return result
+}
+
+export default async function handle(c: Context<{ Bindings: Bindings }>) {
 	let body: ZhihuAnswerRequest
 	try {
 		body = await c.req.json<ZhihuAnswerRequest>()
@@ -154,10 +225,15 @@ export default async function handle(c: Context) {
 		return c.json({
 			data: target.type === 'answer'
 				? await getZhihuAnswer(target.id)
-				: await getZhihuArticle(target.id),
+				: await getZhihuArticle(target.id, c.env.JINA_API_KEY, c.executionCtx),
 		})
 	} catch (error) {
 		console.error('zhihu answer extraction failed', error)
+		if (error instanceof ReaderRateLimitError) {
+			return c.json({ error: true, message: error.message }, 503, {
+				'Retry-After': error.retryAfter,
+			})
+		}
 		return c.json({
 			error: true,
 			message: error instanceof Error ? error.message : 'Zhihu extraction failed',

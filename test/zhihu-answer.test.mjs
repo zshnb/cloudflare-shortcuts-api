@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { extractZhihuArticle, extractZhihuTarget, htmlToText } from '../src/zhihu-answer.ts'
+import { extractReaderArticle, extractZhihuArticle, extractZhihuTarget, htmlToText } from '../src/zhihu-answer.ts'
 
 test('extracts plain text from a shared Zhihu answer', () => {
 	const sharedContent = '知乎回答 https://www.zhihu.com/question/2045559758153946579/answer/2069584596400967693'
@@ -27,6 +27,10 @@ test('extracts a Zhihu article from shared content and initial page data', () =>
 	})}</script>`
 
 	assert.deepEqual(extractZhihuTarget(sharedContent), { type: 'article', id: articleId })
+	assert.deepEqual(
+		extractZhihuTarget(`${sharedContent}?share_code=abc&utm_psn=123`),
+		{ type: 'article', id: articleId },
+	)
 	assert.deepEqual(extractZhihuArticle(page, articleId), {
 		type: 'article',
 		id: articleId,
@@ -36,5 +40,28 @@ test('extracts a Zhihu article from shared content and initial page data', () =>
 		createdAt: '2026-08-09T02:00:26.000Z',
 		updatedAt: '2026-08-09T02:01:09.000Z',
 		content: '文章正文',
+	})
+})
+
+test('extracts a challenged Zhihu article from Reader markdown', () => {
+	const articleId = '2055782042420372097'
+	const markdown = `Title: 对Agent技术的一些随思
+
+URL Source: https://zhuanlan.zhihu.com/p/${articleId}
+
+Markdown Content:
+[Agent](https://example.com) 很强。
+
+**边界也很重要。**`
+
+	assert.deepEqual(extractReaderArticle(markdown, articleId), {
+		type: 'article',
+		id: articleId,
+		sourceUrl: `https://zhuanlan.zhihu.com/p/${articleId}`,
+		title: '对Agent技术的一些随思',
+		author: null,
+		createdAt: null,
+		updatedAt: null,
+		content: 'Agent 很强。\n\n边界也很重要。',
 	})
 })
